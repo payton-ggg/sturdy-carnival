@@ -1,4 +1,5 @@
 let lastCaption;
+let streamAnswer = "";
 
 (() => {
   function askLLM(prompt) {

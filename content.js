@@ -3,77 +3,67 @@ let streamAnswer = "";
 
 (() => {
   function askLLM(prompt) {
-    console.log(prompt);
-
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          type: "FETCH_LLM",
-          payload: { prompt },
-        },
-        (response) => {
-          if (response.success) {
-            console.log("[AI Response]", response.answer);
-            showOverlayMessage(response.answer);
-
-            chrome.storage.local.set({ latestAnswer: response.answer });
-
-            chrome.runtime.sendMessage({
-              type: "AI_RESPONSE",
-              payload: { question: prompt, answer: response.answer },
-            });
-            resolve(response.answer);
-          } else {
-            console.error("[AI Error]", response.error);
-            showOverlayMessage("💥 Ошибка: " + response.error, true);
-            chrome.runtime.sendMessage({
-              type: "AI_ERROR",
-              payload: { error: response.error },
-            });
-            resolve("💥 Ошибка: " + response.error);
-          }
-        }
-      );
+    streamAnswer = "";
+    updateOverlay("⌛ Генерация ответа...");
+    chrome.runtime.sendMessage({
+      type: "FETCH_LLM_STREAM",
+      payload: { prompt },
     });
   }
 
-  function showOverlayMessage(message, isError = false) {
-    let overlay = document.getElementById("ai-response-overlay");
-
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "ai-response-overlay";
-      overlay.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 100000;
-      max-width: 300px;
-      padding: 12px 16px;
-      background: ${isError ? "#fce8e6" : "#e8f0fe"};
-      color: ${isError ? "#b00020" : "#202124"};
-      border-left: 4px solid ${isError ? "#b00020" : "#1a73e8"};
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: "Segoe UI", sans-serif;
-      white-space: pre-wrap;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    `;
-      document.body.appendChild(overlay);
-    }
-
-    overlay.textContent = message;
+  function updateOverlay(content, isError = false) {
+    const overlay = getOrCreateOverlay();
+    overlay.textContent = content;
     overlay.style.background = isError ? "#fce8e6" : "#e8f0fe";
     overlay.style.borderLeft = `4px solid ${isError ? "#b00020" : "#1a73e8"}`;
     overlay.style.color = isError ? "#b00020" : "#202124";
     overlay.style.opacity = "1";
-
-    setTimeout(() => {
-      overlay.style.opacity = "0.3";
-    }, 7000);
   }
+
+  function getOrCreateOverlay() {
+    let el = document.getElementById("ai-response-overlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ai-response-overlay";
+      el.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100000;
+        max-width: 350px;
+        padding: 12px 16px;
+        background: #e8f0fe;
+        color: #202124;
+        border-left: 4px solid #1a73e8;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: "Segoe UI", sans-serif;
+        white-space: pre-wrap;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      `;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "LLM_STREAM_PART") {
+      streamAnswer += message.payload;
+      updateOverlay(streamAnswer);
+    }
+    if (message.type === "LLM_STREAM_END") {
+      updateOverlay(streamAnswer + "\n✓ Готово");
+      setTimeout(() => {
+        const overlay = document.getElementById("ai-response-overlay");
+        if (overlay) overlay.style.opacity = "0";
+      }, 15000);
+    }
+    if (message.type === "LLM_STREAM_ERROR") {
+      updateOverlay("💥 Ошибка: " + message.payload, true);
+    }
+  });
 
   const addButtonToCaption = (captionElement) => {
     const stableParent =

@@ -1,0 +1,198 @@
+let lastCaption;
+
+(() => {
+  function askLLM(prompt) {
+    console.log(prompt);
+
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          type: "FETCH_LLM",
+          payload: { prompt },
+        },
+        (response) => {
+          if (response.success) {
+            console.log("[AI Response]", response.answer);
+            showOverlayMessage(response.answer);
+
+            chrome.storage.local.set({ latestAnswer: response.answer });
+
+            chrome.runtime.sendMessage({
+              type: "AI_RESPONSE",
+              payload: { question: prompt, answer: response.answer },
+            });
+            resolve(response.answer);
+          } else {
+            console.error("[AI Error]", response.error);
+            showOverlayMessage("💥 Ошибка: " + response.error, true);
+            chrome.runtime.sendMessage({
+              type: "AI_ERROR",
+              payload: { error: response.error },
+            });
+            resolve("💥 Ошибка: " + response.error);
+          }
+        }
+      );
+    });
+  }
+
+  function showOverlayMessage(message, isError = false) {
+    let overlay = document.getElementById("ai-response-overlay");
+
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "ai-response-overlay";
+      overlay.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100000;
+      max-width: 300px;
+      padding: 12px 16px;
+      background: ${isError ? "#fce8e6" : "#e8f0fe"};
+      color: ${isError ? "#b00020" : "#202124"};
+      border-left: 4px solid ${isError ? "#b00020" : "#1a73e8"};
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: "Segoe UI", sans-serif;
+      white-space: pre-wrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    `;
+      document.body.appendChild(overlay);
+    }
+
+    overlay.textContent = message;
+    overlay.style.background = isError ? "#fce8e6" : "#e8f0fe";
+    overlay.style.borderLeft = `4px solid ${isError ? "#b00020" : "#1a73e8"}`;
+    overlay.style.color = isError ? "#b00020" : "#202124";
+    overlay.style.opacity = "1";
+
+    setTimeout(() => {
+      overlay.style.opacity = "0.3";
+    }, 7000);
+  }
+
+  const addButtonToCaption = (captionElement) => {
+    const stableParent =
+      captionElement.closest(".nMcdL") || captionElement.parentElement;
+    if (!stableParent) return;
+    if (stableParent.querySelector(".new-answer-btn")) return;
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.className = "ai-button-container";
+    buttonContainer.style.cssText = `
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10000;
+    `;
+
+    const newBtn = document.createElement("button");
+    newBtn.textContent = "AI";
+    newBtn.className = "new-answer-btn";
+    newBtn.style.cssText = `
+      padding: 12px 24px;
+      font-size: 10px;
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      z-index: 10001;
+      font-weight: 500;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      min-width: 28px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    newBtn.addEventListener("mouseenter", () => {
+      newBtn.style.backgroundColor = "#3367d6";
+      newBtn.style.transform = "scale(1.1)";
+    });
+    newBtn.addEventListener("mouseleave", () => {
+      newBtn.style.backgroundColor = "#4285f4";
+      newBtn.style.transform = "scale(1)";
+    });
+
+    buttonContainer.appendChild(newBtn);
+    if (getComputedStyle(stableParent).position === "static") {
+      stableParent.style.position = "relative";
+    }
+    stableParent.appendChild(buttonContainer);
+
+    newBtn.addEventListener("click", async () => {
+      const textContainer =
+        stableParent.querySelector(".ygicle.VbkSUe") ||
+        stableParent.querySelector(".ygicle") ||
+        captionElement;
+      const captionText = textContainer
+        ? textContainer.textContent || textContainer.innerText
+        : "";
+      if (!captionText.trim()) return;
+
+      const originalText = newBtn.textContent;
+      newBtn.textContent = "...";
+      newBtn.disabled = true;
+      newBtn.style.backgroundColor = "#9aa0a6";
+
+      chrome.runtime.sendMessage({
+        type: "BUTTON_CLICKED",
+        payload: { caption: captionText },
+      });
+
+      try {
+        const answer = await askLLM(captionText);
+        newBtn.textContent = "✓";
+        newBtn.style.backgroundColor = "#34a853";
+        setTimeout(() => {
+          newBtn.textContent = originalText;
+          newBtn.style.backgroundColor = "#4285f4";
+        }, 1000);
+      } catch (error) {
+        console.error("Error getting AI response:", error);
+        chrome.runtime.sendMessage({
+          type: "AI_ERROR",
+          payload: { error: error.message },
+        });
+        newBtn.textContent = "!";
+        newBtn.style.backgroundColor = "#ea4335";
+        setTimeout(() => {
+          newBtn.textContent = originalText;
+          newBtn.style.backgroundColor = "#4285f4";
+        }, 2000);
+      } finally {
+        newBtn.disabled = false;
+      }
+    });
+  };
+
+  const processAllCaptions = () => {
+    const captionElements = document.querySelectorAll(
+      ".nMcdL.bj4p3b.gBdnfe, .nMcdL.bj4p3b.gBwdBb"
+    );
+    captionElements.forEach((captionElement) => {
+      addButtonToCaption(captionElement);
+    });
+  };
+
+  const observer = new MutationObserver(() => {
+    processAllCaptions();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Инициализация
+  processAllCaptions();
+
+  chrome.runtime.sendMessage({ type: "EXTENSION_ACTIVE" });
+  console.log("Button observer initialized");
+})();

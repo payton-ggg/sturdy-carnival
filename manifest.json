@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "AI Meet Assistant",
+  "version": "0.1.0",
+  "permissions": ["scripting", "activeTab", "storage"],
+  "host_permissions": [
+    "*://meet.google.com/*",
+    "https://api.intelligence.io.solutions/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://meet.google.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_icon": "icon.png",
+    "default_title": "AI Meet Assistant",
+    "default_popup": "index.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.js"],
+      "matches": ["*://meet.google.com/*"]
+    }
+  ]
+}

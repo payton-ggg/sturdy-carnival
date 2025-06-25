@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Meet Assistant</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Arial, sans-serif;
+        padding: 16px;
+        width: 320px;
+        margin: 0;
+        background: #f8f9fa;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .header h2 {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+
+      .status.active {
+        background: #e8f5e8;
+        color: #1e7e34;
+        border: 1px solid #c3e6cb;
+      }
+
+      .status.inactive {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .responses {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .response-item {
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #1a73e8;
+      }
+
+      .response-question {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 13px;
+        background: #f1f3f4;
+        padding: 8px;
+        border-radius: 4px;
+      }
+
+      .response-answer {
+        color: #5f6368;
+        font-size: 13px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+      }
+
+      .response-time {
+        font-size: 11px;
+        color: #9aa0a6;
+        margin-top: 8px;
+        text-align: right;
+      }
+
+      .loading {
+        text-align: center;
+        color: #9aa0a6;
+        font-style: italic;
+        padding: 20px;
+      }
+
+      .empty-state {
+        text-align: center;
+        color: #9aa0a6;
+        padding: 40px 20px;
+        font-size: 14px;
+      }
+
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      .stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #9aa0a6;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+
+      .ai-button-wrapper {
+        text-align: center;
+        margin: 16px 0;
+      }
+
+      .ai-button {
+        padding: 6px 12px;
+        background: #1a73e8;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .ai-button:hover {
+        background: #0f5ab7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h2>🤖 AI Meet Assistant</h2>
+    </div>
+
+    <div id="status" class="status inactive">
+      <div class="status-dot"></div>
+      <span id="status-text">Ожидает подключения...</span>
+    </div>
+
+    <div class="ai-button-wrapper">
+      <button id="ask-latest" class="ai-button">
+        Ответить на последний субтитр
+      </button>
+    </div>
+
+    <div id="error-container"></div>
+
+    <div class="responses" id="responses">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-state-icon">💭</div>
+        <div>
+          Нажмите кнопку "AI Ответ" рядом с субтитрами или здесь — для генерации
+          ответа
+        </div>
+        <div>
+          <div
+            id="latest-answer-box"
+            style="
+              margin-top: 16px;
+              padding: 12px;
+              background: #e8f0fe;
+              border-left: 4px solid #1a73e8;
+              border-radius: 6px;
+              font-size: 14px;
+              color: #202124;
+              display: none;
+              white-space: pre-wrap;
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats">
+      <span>Кнопок найдено: <span id="buttons-count">0</span></span>
+      <span>Ответов: <span id="responses-count">0</span></span>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

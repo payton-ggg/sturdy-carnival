@@ -21,11 +21,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }),
     })
       .then((res) => {
-        const reader = res.body.getReader();
+        const reader = res.body?.getReader();
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
 
-        const readChunk = () => {
+        function readChunk() {
+          if (!reader) return;
+
           reader.read().then(({ done, value }) => {
             if (done) {
               chrome.tabs.sendMessage(sender.tab.id, {
@@ -36,12 +38,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
             buffer += decoder.decode(value, { stream: true });
 
-            const parts = buffer.split("\n\n");
-            buffer = parts.pop(); // Последний может быть не завершён
+            let lines = buffer.split("\n");
+            buffer = lines.pop() || ""; // возможная незавершённая строка
 
-            for (const part of parts) {
-              if (part.startsWith("data: ")) {
-                const json = part.replace("data: ", "");
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("data:")) {
+                const json = trimmed.replace(/^data:\s*/, "");
+
+                if (json === "[DONE]") {
+                  chrome.tabs.sendMessage(sender.tab.id, {
+                    type: "LLM_STREAM_END",
+                  });
+                  return;
+                }
+
                 try {
                   const parsed = JSON.parse(json);
                   const delta = parsed.choices?.[0]?.delta?.content;
@@ -52,17 +63,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     });
                   }
                 } catch (err) {
-                  console.warn("⚠️ Ошибка JSON в потоке:", err);
+                  console.warn("Ошибка JSON-парсинга:", json, err);
                 }
               }
             }
 
-            readChunk(); // продолжаем читать
+            readChunk();
           });
-        };
+        }
 
         readChunk();
       })
+
       .catch((err) => {
         chrome.tabs.sendMessage(sender.tab.id, {
           type: "LLM_STREAM_ERROR",

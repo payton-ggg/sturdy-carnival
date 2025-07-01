@@ -41,7 +41,7 @@ let streamAnswer = "";
         font-family: "Segoe UI", sans-serif;
         white-space: pre-wrap;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transition: opacity 4.8s ease;
       `;
       document.body.appendChild(el);
     }
@@ -165,7 +165,7 @@ let streamAnswer = "";
 
   const processAllCaptions = () => {
     const captionElements = document.querySelectorAll(
-      ".nMcdL.bj4p3b.gBdnfe, .nMcdL.bj4p3b.gBwdBb"
+      ".nMcdL.bj4p3b.gBdnfe, .nMcdL.bj4p3b.gBwdBb, .nMcdL.bj4p3b"
     );
     captionElements.forEach((captionElement) => {
       addButtonToCaption(captionElement);

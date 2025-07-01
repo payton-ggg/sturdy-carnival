@@ -11,10 +11,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       },
       body: JSON.stringify({
         stream: true,
-        model: "Qwen/Qwen2.5-Coder-32B-Instruct",
+        model: "mistralai/Mistral-Large-Instruct-2411",
         messages: [
           {
-            role: "Ти зараз знаходишся на інтерв'ю. Питання будуть на теми Javascript, Typescript, React.js, Next.js, Node.js, Express.js. Найважливіше для тебе розбирати що це за слова і як вони відносяться до програмування. Відповідь має бути відносно короткою та з прикладами",
+            role: "assistant",
+            content:
+              "Ти зараз знаходишся на технічному інтерв'ю. Відповідай коротко, і дай відповідь як потрібно сказати на інтерв'ю. Теми: JavaScript, TypeScript, React.js, Next.js, Node.js, Express.js.",
+          },
+          {
+            role: "user",
             content: prompt,
           },
         ],

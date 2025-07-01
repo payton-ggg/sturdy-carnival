@@ -26,25 +26,71 @@ let streamAnswer = "";
       el = document.createElement("div");
       el.id = "ai-response-overlay";
       el.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 100000;
-        max-width: 350px;
-        padding: 12px 16px;
-        background: #e8f0fe;
-        color: #202124;
-        border-left: 4px solid #1a73e8;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        border-radius: 8px;
-        font-size: 14px;
-        font-family: "Segoe UI", sans-serif;
-        white-space: pre-wrap;
-        opacity: 0;
-        transition: opacity 4.8s ease;
-      `;
+      position: fixed;
+      top: 20px;
+      right: 400px;
+      z-index: 100000;
+      max-width: 350px;
+      padding: 12px 16px 12px 16px;
+      background: #e8f0fe;
+      color: #202124;
+      border-left: 4px solid #1a73e8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: "Segoe UI", sans-serif;
+      white-space: pre-wrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      cursor: move;
+    `;
+
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "×";
+      closeBtn.style.cssText = `
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      color: #5f6368;
+      cursor: pointer;
+    `;
+
+      closeBtn.addEventListener("click", () => {
+        el.style.display = "none";
+      });
+
+      el.appendChild(closeBtn);
       document.body.appendChild(el);
+
+      // Добавим перетаскивание
+      let isDragging = false;
+      let offsetX, offsetY;
+
+      el.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        offsetX = e.clientX - el.getBoundingClientRect().left;
+        offsetY = e.clientY - el.getBoundingClientRect().top;
+        document.body.style.userSelect = "none";
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+          el.style.left = `${e.clientX - offsetX}px`;
+          el.style.top = `${e.clientY - offsetY}px`;
+          el.style.right = "auto"; // убираем привязку к правому краю
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.userSelect = "";
+      });
     }
+
     return el;
   }
 

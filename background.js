@@ -12,7 +12,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       body: JSON.stringify({
         stream: true,
         model: "meta-llama/Llama-3.3-70B-Instruct",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "Ти зараз знаходишся на інтерв'ю. Питання будуть на теми Javascript, Typescript, React.js, Next.js, Node.js, Express.js. Найважливіше для тебе розбирати що це за слова і як вони відносяться до програмування. Відповідь має бути відносно короткою та з прикладами",
+            content: prompt,
+          },
+        ],
       }),
     })
       .then((res) => {
